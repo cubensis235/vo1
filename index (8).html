@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🦉 Vokabel-Trainer mit Hedwig</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#FFF8F0;min-height:100vh}
+:root{
+  --red:#E63946;--red-dark:#c1121f;--red-light:#ffd6d8;
+  --yellow:#FFD166;--yellow-dark:#f4a261;
+  --cream:#FFF8F0;--green:#06d6a0;--green-dark:#048a68;
+  --blue:#4361ee;--orange:#fb8500;
+  --text:#2d2d2d;--text-light:#555;--white:#fff;
+}
+#app{max-width:480px;margin:0 auto;padding:16px;min-height:100vh}
+.screen{display:none}
+.screen.active{display:block}
+h1{font-size:2rem;font-weight:900;color:var(--red);text-align:center;margin-bottom:6px}
+.owl-wrap{text-align:center;margin:8px 0}
+.owl-bubble{display:inline-block;background:var(--yellow);border-radius:20px;padding:8px 16px;font-size:1rem;font-weight:700;color:#4a3000;position:relative;margin-bottom:8px;max-width:300px}
+.owl-bubble::after{content:'';position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--yellow)}
+.owl-svg{font-size:3.5rem;line-height:1}
+.big-btn{display:block;width:100%;padding:16px;margin:10px 0;border:none;border-radius:18px;font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;cursor:pointer;transition:transform .1s;text-align:center}
+.big-btn:active{transform:scale(.97)}
+.btn-red{background:var(--red);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-yellow{background:var(--yellow);color:#4a3000}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-gray{background:#ccc;color:#444}
+.btn-black{background:#1a1a1a;color:#fff}
+.btn-purple{background:#5e548e;color:#fff}
+.info-card{background:#fff;border:2px solid var(--red-light);border-radius:14px;padding:12px 14px;margin:8px 0}
+.info-title{font-weight:900;color:var(--red);font-size:.95rem;margin-bottom:4px}
+.info-text{font-size:.85rem;color:var(--text);line-height:1.4}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
+.modal-box{background:#fff;border-radius:24px;padding:24px;max-width:340px;width:100%;text-align:center;border:4px solid var(--red-light)}
+.modal-title{font-weight:900;font-size:1.15rem;color:var(--red);margin-bottom:14px}
+.card-wrapper{margin:12px 0}
+.flashcard{background:#fff;border-radius:24px;padding:24px;min-height:160px;border:4px solid var(--red-light);box-shadow:0 4px 0 var(--red-light);display:flex;flex-direction:column;gap:12px}
+.card-label{font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text-light)}
+.card-input{border:3px solid var(--red-light);border-radius:14px;padding:12px 16px;font-size:1.3rem;font-weight:700;font-family:'Nunito',sans-serif;width:100%;outline:none;color:var(--text);background:var(--cream)}
+.card-input:focus{border-color:var(--red)}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:800;margin:2px}
+.badge-red{background:var(--red-light);color:var(--red-dark)}
+.badge-green{background:#d0f5eb;color:var(--green-dark)}
+.badge-yellow{background:var(--yellow);color:#4a3000}
+.badge-blue{background:#dde4ff;color:#2234a8}
+.stats-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.stat-box{background:#fff;border:2px solid var(--red-light);border-radius:14px;padding:8px 14px;text-align:center;flex:1;min-width:70px}
+.stat-num{font-size:1.4rem;font-weight:900;color:var(--red)}
+.stat-lbl{font-size:.7rem;font-weight:700;color:var(--text-light)}
+.fach-row{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap;justify-content:center}
+.fach-box{background:#fff;border:2px solid var(--red-light);border-radius:12px;padding:8px 10px;text-align:center;min-width:50px}
+.fach-num{font-size:1.2rem;font-weight:900;color:var(--red)}
+.fach-lbl{font-size:.65rem;font-weight:700;color:var(--text-light)}
+.points-display{background:var(--yellow);border-radius:20px;padding:10px 20px;text-align:center;margin:10px 0}
+.points-big{font-size:2.5rem;font-weight:900;color:#4a3000}
+.points-lbl{font-size:.85rem;font-weight:800;color:#7a5000}
+.progress-bar{background:var(--red-light);border-radius:10px;height:14px;overflow:hidden;margin:8px 0}
+.progress-fill{background:var(--red);border-radius:10px;height:100%;transition:width .4s}
+.card-list{max-height:300px;overflow-y:auto;margin:10px 0}
+.card-item{background:#fff;border:2px solid var(--red-light);border-radius:14px;padding:10px 14px;margin:6px 0;display:flex;align-items:center;gap:10px}
+.divider{height:2px;background:var(--red-light);border-radius:2px;margin:12px 0}
+.mc-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.mc-btn{background:#fff;border:3px solid var(--red-light);border-radius:16px;padding:14px;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s;color:var(--text)}
+.mc-btn:hover{border-color:var(--red);background:var(--red-light)}
+.mc-btn.correct{background:#d0f5eb;border-color:var(--green-dark);color:var(--green-dark)}
+.mc-btn.wrong{background:#ffd6d8;border-color:var(--red-dark);color:var(--red-dark)}
+.result-box{border-radius:20px;padding:16px;text-align:center;margin:12px 0}
+.result-correct{background:#d0f5eb;border:3px solid var(--green-dark)}
+.result-wrong{background:#ffd6d8;border:3px solid var(--red-dark)}
+.nav-back{background:none;border:none;cursor:pointer;font-size:1.5rem;padding:4px 8px;color:var(--red);font-weight:900;margin-bottom:4px}
+select{border:3px solid var(--red-light);border-radius:14px;padding:10px 14px;background:#fff;width:100%;margin:6px 0;outline:none;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;color:var(--text)}
+.reward-banner{background:linear-gradient(135deg,var(--yellow),var(--orange));border-radius:24px;padding:20px;text-align:center;margin:12px 0}
+.reward-text{font-size:1.3rem;font-weight:900;color:#fff}
+.learn-card{background:#fff;border-radius:24px;padding:20px;border:4px solid var(--red-light);margin:10px 0;text-align:center;min-height:120px;display:flex;align-items:center;justify-content:center}
+.learn-word{font-size:2rem;font-weight:900;color:var(--red)}
+.reset-link{background:none;border:none;color:var(--text-light);font-size:.75rem;font-weight:700;text-decoration:underline;cursor:pointer;display:block;margin:0 auto 10px;font-family:'Nunito',sans-serif}
+.stats-day{background:#fff;border:2px solid var(--red-light);border-radius:14px;padding:10px 14px;margin:6px 0}
+.stats-day-date{font-weight:900;color:var(--red);font-size:1rem;margin-bottom:6px}
+.stats-day-row{display:flex;gap:8px}
+.stats-mini{flex:1;text-align:center;background:var(--cream);border-radius:10px;padding:6px}
+.stats-mini-num{font-weight:900;font-size:1.1rem}
+.stats-mini-lbl{font-size:.65rem;font-weight:700;color:var(--text-light)}
+.sync-bar{background:#e8f4fd;border:2px solid #b3d9f7;border-radius:12px;padding:8px 14px;text-align:center;font-size:.85rem;font-weight:700;color:#1a6fa8;margin:6px 0;display:flex;align-items:center;justify-content:center;gap:8px}
+.sync-dot{width:10px;height:10px;border-radius:50%;background:#06d6a0;display:inline-block}
+.sync-dot.offline{background:#ccc}
+.sync-dot.syncing{background:var(--yellow);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.loading-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:#FFF8F0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
+.loading-screen.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div style="font-size:4rem">🦉</div>
+  <div style="font-size:1.2rem;font-weight:800;color:var(--red);margin-top:12px">Hedwig lädt deine Karten...</div>
+  <div style="font-size:.9rem;color:var(--text-light);margin-top:6px">Verbinde mit der Datenbank</div>
+</div>
+
+<div id="app">
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <h1>🦉 Vokabel-Trainer</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble" id="home-bubble">Hallo! Ich bin Hedwig!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="sync-bar" id="sync-bar">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-text">Verbinde...</span>
+    </div>
+    <div class="points-display">
+      <div class="points-big" id="home-points">0</div>
+      <div class="points-lbl">Bonuspunkte ⭐</div>
+    </div>
+    <button class="reset-link" onclick="resetPoints()">Bonuspunkte zurücksetzen</button>
+    <div id="reward-banner-home" style="display:none" class="reward-banner">
+      <div class="reward-text">🏆 100 Punkte! Zeig das deinen Eltern!</div>
+      <div style="font-size:.9rem;color:#fff;margin-top:6px">Du hast eine Belohnung verdient!</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" id="home-total">0</div><div class="stat-lbl">Karten gesamt</div></div>
+      <div class="stat-box"><div class="stat-num" id="home-due">0</div><div class="stat-lbl">Heute fällig</div></div>
+    </div>
+    <div class="fach-row" id="home-faecher"></div>
+    <div class="divider"></div>
+    <button class="big-btn btn-red" onclick="showScreen('screen-create')">✏️ Neue Karte erstellen</button>
+    <button class="big-btn btn-blue" onclick="showLearnSetup()">📚 Lernen</button>
+    <button class="big-btn btn-orange" onclick="startNewWordsLearn()">🆕 Neue Vokabeln lernen</button>
+    <button class="big-btn btn-black" onclick="startUltraschwer()">🔥 ULTRASCHWER</button>
+    <button class="big-btn btn-green" onclick="showScreen('screen-leitner')">🗃️ Alle Karten ansehen</button>
+    <button class="big-btn btn-yellow" onclick="showScreen('screen-stats')">📅 Statistik</button>
+    <button class="big-btn btn-purple" onclick="showScreen('screen-help')">❓ Wie diese App funktioniert</button>
+  </div>
+
+  <!-- CREATE -->
+  <div id="screen-create" class="screen">
+    <button class="nav-back" onclick="showScreen('screen-home')">← Zurück</button>
+    <h1>✏️ Neue Karte</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble">Schreib ein Wort und die Übersetzung!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="card-wrapper">
+      <div class="flashcard">
+        <div class="card-label">🇩🇪 Deutsches Wort</div>
+        <input class="card-input" id="create-de" type="text" placeholder="z.B. Apfel" maxlength="50">
+        <div class="divider"></div>
+        <div class="card-label">🇬🇧 Englische Übersetzung</div>
+        <input class="card-input" id="create-en" type="text" placeholder="z.B. apple" maxlength="50">
+      </div>
+    </div>
+    <button class="big-btn btn-green" onclick="saveCard()">💾 Speichern & Nächste Karte</button>
+    <button class="big-btn btn-gray" onclick="showScreen('screen-home')">🏠 Fertig</button>
+    <div id="create-msg" style="text-align:center;font-weight:800;color:var(--green-dark);min-height:28px;font-size:1.1rem"></div>
+    <div class="card-list" id="create-recent"></div>
+  </div>
+
+  <!-- LEARN SETUP -->
+  <div id="screen-learn-setup" class="screen">
+    <button class="nav-back" onclick="showScreen('screen-home')">← Zurück</button>
+    <h1>📚 Lernmodus</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble">Wie möchtest du heute lernen?</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="card-wrapper">
+      <div class="flashcard">
+        <div class="card-label">Wie viele Karten?</div>
+        <select id="setup-count">
+          <option value="5">5 Karten</option>
+          <option value="10" selected>10 Karten</option>
+          <option value="20">20 Karten</option>
+          <option value="999">Alle Karten</option>
+        </select>
+        <div class="card-label">Was wird abgefragt?</div>
+        <select id="setup-dir">
+          <option value="de-en">Deutsch → Englisch</option>
+          <option value="en-de">Englisch → Deutsch</option>
+        </select>
+        <div class="card-label">Welche Karten?</div>
+        <select id="setup-source">
+          <option value="leitner">Fällige Karten (Leitner-System)</option>
+          <option value="all">Alle Karten</option>
+          <option value="fach1">Nur Fach 1</option>
+        </select>
+      </div>
+    </div>
+    <button class="big-btn btn-red" onclick="startLearn()">🚀 Los geht's!</button>
+  </div>
+
+  <!-- LEARN -->
+  <div id="screen-learn" class="screen">
+    <button class="nav-back" onclick="if(confirm('Lernen wirklich beenden?'))showScreen('screen-home')">← Abbruch</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0">
+      <span style="font-weight:800;color:var(--red-dark)" id="learn-count-label">Karte 1/10</span>
+      <span style="font-weight:800;color:var(--text-light)" id="learn-fach-label">Fach 1</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="learn-progress" style="width:0%"></div></div>
+    <div class="learn-card">
+      <div class="learn-word" id="learn-question">-</div>
+    </div>
+    <div class="card-wrapper">
+      <div class="flashcard" id="learn-answer-box">
+        <div class="card-label" id="learn-answer-label">Schreib die Übersetzung:</div>
+        <input class="card-input" id="learn-answer" type="text" placeholder="..." maxlength="50">
+        <button class="big-btn btn-red" onclick="checkAnswer()">✅ Prüfen</button>
+      </div>
+    </div>
+    <div id="learn-mc" style="display:none">
+      <div class="card-label" style="margin-bottom:8px">Welche Antwort ist richtig?</div>
+      <div class="mc-options" id="mc-options"></div>
+    </div>
+    <div id="learn-result" style="display:none">
+      <div class="result-box" id="learn-result-box">
+        <div style="font-size:1.5rem;font-weight:900" id="result-emoji"></div>
+        <div style="font-size:1rem;font-weight:700;margin-top:6px" id="result-text"></div>
+        <div style="font-size:.85rem;color:var(--text-light);margin-top:4px" id="result-fach"></div>
+      </div>
+      <button class="big-btn btn-blue" onclick="nextCard()">👉 Weiter</button>
+    </div>
+  </div>
+
+  <!-- ALL CARDS -->
+  <div id="screen-leitner" class="screen">
+    <button class="nav-back" onclick="showScreen('screen-home')">← Zurück</button>
+    <h1>🗃️ Alle Karten</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble">Klick ein Fach zum Filtern!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="fach-row" id="leitner-faecher"></div>
+    <button class="big-btn btn-gray" style="padding:10px;font-size:.9rem;margin:4px 0" onclick="renderCardList(cards)">Alle anzeigen</button>
+    <div class="card-list" id="all-cards-list"></div>
+  </div>
+
+  <!-- STATS -->
+  <div id="screen-stats" class="screen">
+    <button class="nav-back" onclick="showScreen('screen-home')">← Zurück</button>
+    <h1>📅 Statistik</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble">Hier siehst du deinen Lernfortschritt pro Tag!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="card-list" id="stats-list" style="max-height:420px"></div>
+  </div>
+
+  <!-- HELP / ÜBERSICHT -->
+  <div id="screen-help" class="screen">
+    <button class="nav-back" onclick="showScreen('screen-home')">← Zurück</button>
+    <h1>❓ Wie diese App funktioniert</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble">Lass mich dir alles erklären!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">✏️ Neue Karte erstellen</div>
+      <div class="info-text">Trag ein deutsches Wort und die englische Übersetzung ein und speichere sie als neue Karte.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">📚 Lernen</div>
+      <div class="info-text">Du wählst, wie viele Karten, in welche Richtung (Deutsch→Englisch oder Englisch→Deutsch) und welche Karten (fällige, alle oder nur Fach 1) abgefragt werden.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">🆕 Neue Vokabeln lernen</div>
+      <div class="info-text">Fragt automatisch genau die Karten ab, die zuletzt an einem Tag hinzugefügt wurden.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">🔥 ULTRASCHWER</div>
+      <div class="info-text">Fragt die Karten ab, die du am häufigsten falsch beantwortet hast – der schwerste Modus!</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">🗃️ Alle Karten ansehen</div>
+      <div class="info-text">Zeigt dir alle Karten mit Fach, Trefferzahl und Erstellungsdatum. Du kannst nach Fach filtern.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">🗂️ Die 5 Fächer (Leitner-System)</div>
+      <div class="info-text">Jede Karte wandert durch 5 Fächer. Bei einer richtigen Antwort rutscht sie ein Fach weiter und wird seltener abgefragt; bei einer falschen geht sie zurück in Fach 1. Tippst du direkt auf ein Fach-Icon, fragt die App nur die Karten dieses einen Fachs ab – dort bleibt die Karte bei richtiger Antwort in ihrem Fach, bei falscher geht sie trotzdem zurück in Fach 1.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">⭐ Bonuspunkte</div>
+      <div class="info-text">Du bekommst einen Punkt, wenn eine Karte richtig beantwortet wird und dabei in Fach 3 oder höher landet. Unter der Punkteanzeige kannst du die Punkte jederzeit zurücksetzen.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">🏆 Belohnung</div>
+      <div class="info-text">Ab 100 Bonuspunkten gibt es eine kleine Belohnungs-Anzeige – zeig sie deinen Eltern!</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">📅 Statistik</div>
+      <div class="info-text">Zeigt dir pro Tag, wie viele Karten du gelernt hast und wie viele davon richtig bzw. falsch waren.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">✅ Automatisch weiter</div>
+      <div class="info-text">Bei einer richtigen Antwort geht es nach kurzer Bestätigung direkt zur nächsten Karte. Bei einer falschen Antwort musst du selbst auf "Weiter" tippen, damit du die richtige Lösung in Ruhe lesen kannst.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-title">☁️ Synchronisierung</div>
+      <div class="info-text">Alle Karten und Punkte werden automatisch in der Datenbank gespeichert, sodass sie auf jedem Gerät verfügbar sind.</div>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div id="screen-learn-done" class="screen">
+    <h1>🎉 Geschafft!</h1>
+    <div class="owl-wrap">
+      <div class="owl-bubble" id="done-bubble">Super gemacht!</div>
+      <div class="owl-svg">🦉</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" id="done-correct">0</div><div class="stat-lbl">Richtig ✅</div></div>
+      <div class="stat-box"><div class="stat-num" id="done-wrong">0</div><div class="stat-lbl">Falsch ❌</div></div>
+      <div class="stat-box"><div class="stat-num" id="done-bonus">+0</div><div class="stat-lbl">Punkte ⭐</div></div>
+    </div>
+    <div class="points-display">
+      <div class="points-big" id="done-total-points">0</div>
+      <div class="points-lbl">Gesamtpunkte ⭐</div>
+    </div>
+    <div id="done-reward" style="display:none" class="reward-banner">
+      <div class="reward-text">🏆 100 Punkte! Zeig das deinen Eltern!</div>
+    </div>
+    <button class="big-btn btn-red" onclick="showScreen('screen-home')">🏠 Zur Startseite</button>
+    <button class="big-btn btn-blue" onclick="showLearnSetup()">📚 Nochmal lernen</button>
+  </div>
+</div>
+
+<!-- FACH-RICHTUNGS-MODAL -->
+<div class="modal-overlay" id="fach-dir-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title" id="fach-dir-title">Fach lernen</div>
+    <button class="big-btn btn-blue" onclick="confirmFachDir('de-en')">🇩🇪 → 🇬🇧 Deutsch-Englisch</button>
+    <button class="big-btn btn-orange" onclick="confirmFachDir('en-de')">🇬🇧 → 🇩🇪 Englisch-Deutsch</button>
+    <button class="big-btn btn-gray" onclick="closeFachDirModal()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC9Duzb1oYv4Dse4iAgDFUOqX-hhlHKAMQ",
+  authDomain: "vok1-d1c2b.firebaseapp.com",
+  databaseURL: "https://vok1-d1c2b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "vok1-d1c2b",
+  storageBucket: "vok1-d1c2b.firebasestorage.app",
+  messagingSenderId: "472482188955",
+  appId: "1:472482188955:web:3335eb202919a6c876003e"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getDatabase(firebaseApp);
+
+let cards = [];
+let points = 0;
+let history = [];
+let learnSession = { cards: [], idx: 0, dir: 'de-en', correct: 0, wrong: 0, bonusEarned: 0 };
+let currentCard = null;
+let isOnline = false;
+let autoAdvanceTimer = null;
+
+// Sync-Status anzeigen
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if (status === 'online') {
+    dot.className = 'sync-dot';
+    text.textContent = '☁️ Karten werden synchronisiert';
+    isOnline = true;
+  } else if (status === 'syncing') {
+    dot.className = 'sync-dot syncing';
+    text.textContent = '⏳ Speichere...';
+  } else {
+    dot.className = 'sync-dot offline';
+    text.textContent = '⚠️ Keine Verbindung';
+    isOnline = false;
+  }
+}
+
+// Echtzeit-Listener: Karten laden
+const cardsRef = ref(db, 'cards');
+const pointsRef = ref(db, 'points');
+const historyRef = ref(db, 'history');
+
+onValue(cardsRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    cards = Object.entries(data).map(([id, val]) => ({ ...val, firebaseId: id }));
+    cards.sort((a, b) => (a.created_ts || 0) - (b.created_ts || 0));
+  } else {
+    cards = [];
+  }
+  setSyncStatus('online');
+  document.getElementById('loading-screen').classList.add('hidden');
+  const active = document.querySelector('.screen.active');
+  if (active && active.id === 'screen-home') renderHome();
+  if (active && active.id === 'screen-leitner') renderLeitner();
+  if (active && active.id === 'screen-create') renderCreateRecent();
+}, (error) => {
+  setSyncStatus('offline');
+  document.getElementById('loading-screen').classList.add('hidden');
+});
+
+onValue(pointsRef, (snapshot) => {
+  points = snapshot.val() || 0;
+  document.getElementById('home-points').textContent = points;
+  if (document.getElementById('done-total-points'))
+    document.getElementById('done-total-points').textContent = points;
+});
+
+onValue(historyRef, (snapshot) => {
+  const data = snapshot.val();
+  history = data ? Object.values(data) : [];
+  const active = document.querySelector('.screen.active');
+  if (active && active.id === 'screen-stats') renderStats();
+});
+
+// Punkte speichern
+async function savePoints(newPoints) {
+  await set(pointsRef, newPoints);
+}
+
+// Bonuspunkte auf 0 zurücksetzen
+window.resetPoints = async function() {
+  if (!confirm('Wirklich alle Bonuspunkte auf 0 zurücksetzen?')) return;
+  await savePoints(0);
+}
+
+// Lernergebnis im Verlauf speichern (für die Statistik)
+async function logHistory(isCorrect) {
+  await push(historyRef, {
+    date: new Date().toLocaleDateString('de-DE'),
+    ts: Date.now(),
+    correct: isCorrect
+  });
+}
+
+// Karte speichern
+window.saveCard = async function() {
+  const de = document.getElementById('create-de').value.trim();
+  const en = document.getElementById('create-en').value.trim();
+  const msg = document.getElementById('create-msg');
+  if (!de || !en) { msg.textContent = '😊 Bitte beide Felder ausfüllen!'; return; }
+  setSyncStatus('syncing');
+  const newCard = {
+    de, en, fach: 1,
+    created: new Date().toLocaleDateString('de-DE'),
+    created_ts: Date.now(),
+    richtig: 0, falsch: 0, lastSeen: null
+  };
+  const newRef = push(cardsRef);
+  await set(newRef, newCard);
+  setSyncStatus('online');
+  msg.textContent = '✅ Karte gespeichert und synchronisiert!';
+  setTimeout(() => msg.textContent = '', 2500);
+  document.getElementById('create-de').value = '';
+  document.getElementById('create-en').value = '';
+  document.getElementById('create-de').focus();
+}
+
+// Karte in Firebase updaten
+async function updateCard(card) {
+  if (!card.firebaseId) return;
+  const cardRef = ref(db, 'cards/' + card.firebaseId);
+  const { firebaseId, ...data } = card;
+  await update(cardRef, data);
+}
+
+// Hilfsfunktionen
+function leitnerDays(fach) { return [0,1,2,7,14,30][fach] || 0; }
+function isDue(card) {
+  const fach = card.fach || 1;
+  if (fach === 1) return true;
+  const last = card.lastSeen ? new Date(card.lastSeen) : new Date(0);
+  const diff = (Date.now() - last.getTime()) / (1000*60*60*24);
+  return diff >= leitnerDays(fach);
+}
+function getDueCards() { return cards.filter(c => isDue(c)); }
+function getFachCounts() {
+  const f = {1:0,2:0,3:0,4:0,5:0};
+  cards.forEach(c => f[c.fach||1] = (f[c.fach||1]||0)+1);
+  return f;
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Screens
+window.showScreen = function(id) {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-home') renderHome();
+  if (id === 'screen-leitner') renderLeitner();
+  if (id === 'screen-create') renderCreateRecent();
+  if (id === 'screen-stats') renderStats();
+}
+
+function renderHome() {
+  document.getElementById('home-points').textContent = points;
+  document.getElementById('home-total').textContent = cards.length;
+  document.getElementById('home-due').textContent = getDueCards().length;
+  const fc = getFachCounts();
+  const names = ['','📅 Täglich','🗓️ 2-tägl.','📆 Wöchentl.','🗃️ 2-wöchentl.','🏆 Monatlich'];
+  document.getElementById('home-faecher').innerHTML = [1,2,3,4,5].map(f =>
+    `<div class="fach-box" style="cursor:pointer" onclick="openFachDirModal(${f})"><div class="fach-num">${fc[f]||0}</div><div class="fach-lbl">Fach ${f}<br>${names[f]}</div></div>`
+  ).join('');
+  document.getElementById('reward-banner-home').style.display = points >= 100 ? 'block' : 'none';
+  const bubble = document.getElementById('home-bubble');
+  if (points >= 100 && points < 105) bubble.textContent = 'WOW! 100 Punkte! Zeig das deinen Eltern! 🏆';
+  else if (cards.length === 0) bubble.textContent = 'Hallo! Erstell zuerst ein paar Karten!';
+  else bubble.textContent = `Du hast ${cards.length} Karten! Heute sind ${getDueCards().length} fällig! 💪`;
+}
+
+function renderCreateRecent() {
+  const list = document.getElementById('create-recent');
+  const recent = [...cards].reverse().slice(0,5);
+  if (recent.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = '<div style="font-size:.8rem;font-weight:800;color:var(--text-light);margin:8px 0 4px">Zuletzt gespeichert:</div>' +
+    recent.map(c => `<div class="card-item">
+      <span style="font-weight:800">${esc(c.de)}</span>
+      <span style="color:var(--red);font-weight:900;padding:0 4px">→</span>
+      <span style="color:var(--blue);font-weight:700">${esc(c.en)}</span>
+    </div>`).join('');
+}
+
+// Findet alle Karten, die am häufigsten falsch beantwortet wurden
+function getHardestCards() {
+  if (cards.length === 0) return [];
+  const maxFalsch = Math.max(...cards.map(c => c.falsch || 0));
+  if (maxFalsch === 0) return [];
+  return cards.filter(c => (c.falsch || 0) === maxFalsch);
+}
+
+window.startUltraschwer = function() {
+  const pool = getHardestCards();
+  if (pool.length === 0) {
+    alert('Du hast noch keine Karten falsch beantwortet! Lern erst ein bisschen, dann gibt es hier eine Herausforderung. 💪');
+    return;
+  }
+  learnSession = { cards: shuffle(pool), idx: 0, dir: 'de-en', correct: 0, wrong: 0, bonusEarned: 0 };
+  showScreen('screen-learn');
+  showLearnCard();
+}
+
+window.showLearnSetup = function() {
+  if (cards.length === 0) { alert('Du hast noch keine Karten! Erstell zuerst welche.'); return; }
+  showScreen('screen-learn-setup');
+}
+
+// Lernt alle Vokabeln, die am zuletzt hinzugefügten Datum neu erstellt/hochgeladen wurden
+// Merkmal/Kriterium ist ausschließlich das Datum des Hinzufügens (Kalendertag)
+function getDateKey(card) {
+  if (card.created_ts) {
+    const d = new Date(card.created_ts);
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  return card.created || 'unbekannt';
+}
+
+function getNewestDateCards() {
+  if (cards.length === 0) return [];
+  let newestCard = null, maxTs = -Infinity;
+  cards.forEach(c => {
+    const ts = c.created_ts || 0;
+    if (ts > maxTs) { maxTs = ts; newestCard = c; }
+  });
+  if (!newestCard) return [];
+  const newestKey = getDateKey(newestCard);
+  return cards.filter(c => getDateKey(c) === newestKey);
+}
+
+window.startNewWordsLearn = function() {
+  if (cards.length === 0) { alert('Du hast noch keine Karten! Erstell zuerst welche.'); return; }
+  const pool = getNewestDateCards();
+  learnSession = { cards: shuffle(pool), idx: 0, dir: 'de-en', correct: 0, wrong: 0, bonusEarned: 0 };
+  showScreen('screen-learn');
+  showLearnCard();
+}
+
+// Fach-Quiz: Klick auf ein Fach-Icon fragt nur die Karten dieses Fachs ab.
+// Richtige Antworten verändern das Fach hier NICHT, falsche Antworten gehen wie gewohnt zurück in Fach 1.
+let pendingFach = null;
+
+window.openFachDirModal = function(f) {
+  const pool = cards.filter(c => (c.fach || 1) === f);
+  if (pool.length === 0) { alert(`Fach ${f} ist leer! Keine Karten zum Abfragen.`); return; }
+  pendingFach = f;
+  document.getElementById('fach-dir-title').textContent = `Fach ${f} lernen – welche Richtung?`;
+  document.getElementById('fach-dir-modal').style.display = 'flex';
+}
+
+window.closeFachDirModal = function() {
+  document.getElementById('fach-dir-modal').style.display = 'none';
+  pendingFach = null;
+}
+
+window.confirmFachDir = function(dir) {
+  const f = pendingFach;
+  document.getElementById('fach-dir-modal').style.display = 'none';
+  pendingFach = null;
+  if (f === null) return;
+  const pool = cards.filter(c => (c.fach || 1) === f);
+  learnSession = { cards: shuffle(pool), idx: 0, dir, correct: 0, wrong: 0, bonusEarned: 0, lockFach: true };
+  showScreen('screen-learn');
+  showLearnCard();
+}
+
+window.startLearn = function() {
+  const count = parseInt(document.getElementById('setup-count').value) || 10;
+  const dir = document.getElementById('setup-dir').value;
+  const source = document.getElementById('setup-source').value;
+  let pool;
+  if (source === 'leitner') pool = getDueCards();
+  else if (source === 'fach1') pool = cards.filter(c => (c.fach||1) === 1);
+  else pool = [...cards];
+  if (pool.length === 0) { alert('Keine passenden Karten! Versuch eine andere Auswahl.'); return; }
+  pool = shuffle(pool);
+  if (count < 999) pool = pool.slice(0, count);
+  learnSession = { cards: pool, idx: 0, dir, correct: 0, wrong: 0, bonusEarned: 0 };
+  showScreen('screen-learn');
+  showLearnCard();
+}
+
+function showLearnCard() {
+  const { cards: sc, idx, dir } = learnSession;
+  if (idx >= sc.length) { endLearn(); return; }
+  currentCard = sc[idx];
+  const total = sc.length;
+  const fach = currentCard.fach || 1;
+  document.getElementById('learn-count-label').textContent = `Karte ${idx+1}/${total}`;
+  document.getElementById('learn-fach-label').textContent = `Fach ${fach}`;
+  document.getElementById('learn-progress').style.width = `${Math.round(idx/total*100)}%`;
+  document.getElementById('learn-question').textContent = dir === 'de-en' ? currentCard.de : currentCard.en;
+  document.getElementById('learn-answer-label').textContent = dir === 'de-en'
+    ? '🇬🇧 Schreib die englische Übersetzung:' : '🇩🇪 Schreib die deutsche Übersetzung:';
+  document.getElementById('learn-answer').value = '';
+  document.getElementById('learn-result').style.display = 'none';
+  document.getElementById('learn-mc').style.display = 'none';
+  document.getElementById('learn-answer-box').style.display = 'block';
+  document.getElementById('learn-answer').focus();
+}
+
+function normalize(s) { return s.trim().toLowerCase().replace(/[^a-zäöüß0-9 ]/g,''); }
+
+window.checkAnswer = function() {
+  const { dir } = learnSession;
+  const answer = document.getElementById('learn-answer').value;
+  const correct = dir === 'de-en' ? currentCard.en : currentCard.de;
+  const isCorrect = normalize(answer) === normalize(correct);
+  const fach = currentCard.fach || 1;
+  if (fach === 5 && !isCorrect) { showMC(correct, dir); return; }
+  processResult(isCorrect, correct);
+}
+
+async function processResult(isCorrect, correct) {
+  const fach = currentCard.fach || 1;
+  let newFach = fach, bonus = 0;
+  if (isCorrect) {
+    currentCard.richtig = (currentCard.richtig||0) + 1;
+    currentCard.lastSeen = new Date().toISOString();
+    if (!learnSession.lockFach && fach < 5) newFach = fach + 1;
+    if (newFach >= 3) bonus = 1;
+    learnSession.correct++;
+  } else {
+    currentCard.falsch = (currentCard.falsch||0) + 1;
+    currentCard.lastSeen = new Date().toISOString();
+    newFach = 1;
+    learnSession.wrong++;
+  }
+  currentCard.fach = newFach;
+  if (bonus > 0) {
+    points += bonus;
+    learnSession.bonusEarned += bonus;
+    await savePoints(points);
+  }
+  await updateCard(currentCard);
+  await logHistory(isCorrect);
+
+  const box = document.getElementById('learn-result-box');
+  box.className = 'result-box ' + (isCorrect ? 'result-correct' : 'result-wrong');
+  document.getElementById('result-emoji').textContent = isCorrect ? '🎉 Richtig!' : '❌ Falsch!';
+  document.getElementById('result-text').textContent = isCorrect
+    ? `Super! Die Antwort ist: "${correct}"`
+    : `Die richtige Antwort war: "${correct}"`;
+  document.getElementById('result-fach').textContent = isCorrect
+    ? (learnSession.lockFach
+        ? `Karte bleibt in Fach ${newFach} 📂${bonus > 0 ? ' +1 Bonuspunkt ⭐' : ''}`
+        : `Karte wandert in Fach ${newFach} 📂${bonus > 0 ? ' +1 Bonuspunkt ⭐' : ''}`)
+    : `Karte geht zurück in Fach 1 📂`;
+  document.getElementById('learn-answer-box').style.display = 'none';
+  document.getElementById('learn-mc').style.display = 'none';
+  document.getElementById('learn-result').style.display = 'block';
+
+  if (isCorrect) {
+    autoAdvanceTimer = setTimeout(() => { nextCard(); }, 800);
+  }
+}
+
+function showMC(correct, dir) {
+  document.getElementById('learn-answer-box').style.display = 'none';
+  document.getElementById('learn-mc').style.display = 'block';
+  const pool = cards.filter(c => c.firebaseId !== currentCard.firebaseId);
+  const wrongs = shuffle(pool).slice(0,4).map(c => dir === 'de-en' ? c.en : c.de);
+  let options = shuffle([correct, ...wrongs.slice(0,4)]);
+  while (options.length < 4) options.push('...');
+  document.getElementById('mc-options').innerHTML = options.map(opt =>
+    `<button class="mc-btn" onclick="selectMC('${esc(opt)}','${esc(correct)}')">${esc(opt)}</button>`
+  ).join('');
+}
+
+window.selectMC = function(chosen, correct) {
+  document.querySelectorAll('.mc-btn').forEach(b => {
+    if (b.textContent === correct) b.className = 'mc-btn correct';
+    else if (b.textContent === chosen && chosen !== correct) b.className = 'mc-btn wrong';
+    b.onclick = null;
+  });
+  setTimeout(() => processResult(chosen === correct, correct), 900);
+}
+
+window.nextCard = function() {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  learnSession.idx++;
+  showLearnCard();
+}
+
+function endLearn() {
+  document.getElementById('done-correct').textContent = learnSession.correct;
+  document.getElementById('done-wrong').textContent = learnSession.wrong;
+  document.getElementById('done-bonus').textContent = '+' + learnSession.bonusEarned;
+  document.getElementById('done-total-points').textContent = points;
+  const msgs = ['Super gemacht! Du bist ein Lernstar! 🌟','Toll! Weiter so! 💪','Klasse! 🎓','Fantastisch! Hedwig ist stolz! 🦉'];
+  document.getElementById('done-bubble').textContent = msgs[Math.floor(Math.random()*msgs.length)];
+  document.getElementById('done-reward').style.display = points >= 100 ? 'block' : 'none';
+  showScreen('screen-learn-done');
+}
+
+function renderLeitner() {
+  const fc = getFachCounts();
+  const names = ['','📅 Täglich','🗓️ 2-täglich','📆 Wöchentlich','🗃️ 2-wöchentlich','🏆 Monatlich'];
+  document.getElementById('leitner-faecher').innerHTML = [1,2,3,4,5].map(f =>
+    `<div class="fach-box" style="cursor:pointer" onclick="filterFach(${f})">
+      <div class="fach-num">${fc[f]||0}</div>
+      <div class="fach-lbl">Fach ${f}<br>${names[f]}</div>
+    </div>`
+  ).join('');
+  renderCardList(cards);
+}
+
+function renderStats() {
+  const el = document.getElementById('stats-list');
+  if (history.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-weight:700">Noch keine Lerndaten vorhanden! 🦉</div>';
+    return;
+  }
+  const byDate = {};
+  history.forEach(h => {
+    const d = h.date || 'Unbekannt';
+    if (!byDate[d]) byDate[d] = { total: 0, correct: 0, wrong: 0, ts: h.ts || 0 };
+    byDate[d].total++;
+    if (h.correct) byDate[d].correct++; else byDate[d].wrong++;
+    if ((h.ts||0) > byDate[d].ts) byDate[d].ts = h.ts;
+  });
+  const dates = Object.keys(byDate).sort((a, b) => byDate[b].ts - byDate[a].ts);
+  el.innerHTML = dates.map(d => {
+    const s = byDate[d];
+    return `<div class="stats-day">
+      <div class="stats-day-date">📅 ${esc(d)}</div>
+      <div class="stats-day-row">
+        <div class="stats-mini"><div class="stats-mini-num" style="color:var(--blue)">${s.total}</div><div class="stats-mini-lbl">Gelernt</div></div>
+        <div class="stats-mini"><div class="stats-mini-num" style="color:var(--green-dark)">${s.correct}</div><div class="stats-mini-lbl">Richtig ✅</div></div>
+        <div class="stats-mini"><div class="stats-mini-num" style="color:var(--red-dark)">${s.wrong}</div><div class="stats-mini-lbl">Falsch ❌</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterFach = function(f) { renderCardList(cards.filter(c => (c.fach||1) === f)); }
+
+window.renderCardList = function(list) {
+  const el = document.getElementById('all-cards-list');
+  if (list.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-weight:700">Keine Karten hier! 🦉</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => `<div class="card-item">
+    <div style="flex:1">
+      <div style="font-weight:800">${esc(c.de)} → <span style="color:var(--blue)">${esc(c.en)}</span></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+        <span class="badge badge-red">Fach ${c.fach||1}</span>
+        <span class="badge badge-green">✅ ${c.richtig||0}x</span>
+        <span class="badge badge-red">❌ ${c.falsch||0}x</span>
+        <span class="badge badge-yellow">📅 ${c.created||'?'}</span>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+document.getElementById('learn-answer').addEventListener('keydown', e => { if(e.key==='Enter') checkAnswer(); });
+document.getElementById('create-en').addEventListener('keydown', e => { if(e.key==='Enter') saveCard(); });
+
+// Timeout falls Firebase nicht antwortet
+setTimeout(() => {
+  document.getElementById('loading-screen').classList.add('hidden');
+}, 5000);
+
+</script>
+</body>
+</html>
